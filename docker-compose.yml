@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  contextflow-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: contextflow-extension-dev
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./vite.config.ts:/app/vite.config.ts
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+
+      # Mount dist directory so built files appear on host
+      - ./dist:/app/dist
+
+      # Prevent overwriting node_modules from host
+      - /app/node_modules
+
+    ports:
+      # Expose Vite dev server (useful if you add a web UI later)
+      - "5173:5173"
+
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true  # Better file watching in Docker
+
+    stdin_open: true
+    tty: true
+
+    command: npm run dev
