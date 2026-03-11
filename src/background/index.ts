@@ -1,11 +1,7 @@
 import { db } from '../db';
-import { OffscreenManager } from './offscreen-manager';
 import {
   MessageType,
-  createMessage,
-  type Message,
-  type PageContentPayload,
-  type GenerateEmbeddingPayload
+  type Message
 } from '../messages';
 
 console.log('[Background] ContextFlow background service worker started');
@@ -70,17 +66,6 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   } catch (error) {
     console.error('[Background] Failed to update tab in database:', error);
   }
-
-  // Skip chrome:// and other special URLs
-  if (tab.url.startsWith('chrome://') ||
-      tab.url.startsWith('chrome-extension://') ||
-      tab.url.startsWith('about:') ||
-      tab.url.startsWith('edge://')) {
-    return;
-  }
-
-  // Content script should auto-inject via manifest
-  // No need to manually inject here
 });
 
 /**
@@ -118,35 +103,6 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
  */
 chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) => {
   console.log('[Background] Received message:', message.type, 'from:', sender.tab?.id || 'extension');
-
-  // Handle page content extraction from content script
-  if (message.type === MessageType.PAGE_CONTENT_EXTRACTED) {
-    const payload = message.payload as PageContentPayload;
-
-    (async () => {
-      try {
-        // Send to offscreen document for embedding generation
-        const embeddingPayload: GenerateEmbeddingPayload = {
-          url: payload.url,
-          text: payload.snippet || payload.metaDescription || payload.h1 || payload.title
-        };
-
-        await OffscreenManager.sendMessage(
-          createMessage(MessageType.GENERATE_EMBEDDING, embeddingPayload)
-        );
-
-        sendResponse({ success: true });
-      } catch (error) {
-        console.error('[Background] Failed to process content extraction:', error);
-        sendResponse({
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
-    })();
-
-    return true; // Keep channel open for async response
-  }
 
   // Handle power feature requests from side panel
   // These will be handled by the API layer, but background worker can coordinate
