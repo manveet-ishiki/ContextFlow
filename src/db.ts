@@ -1,10 +1,9 @@
 import Dexie, { Table } from 'dexie';
-import type { TabRecord, Project, Embedding, Snapshot } from './types';
+import type { TabRecord, Project, Snapshot } from './types';
 
 class ContextFlowDB extends Dexie {
   tabs!: Table<TabRecord, number>;
   projects!: Table<Project, string>;
-  embeddings!: Table<Embedding, string>;
   snapshots!: Table<Snapshot, string>;
 
   constructor() {
@@ -13,7 +12,6 @@ class ContextFlowDB extends Dexie {
     this.version(1).stores({
       tabs: 'id, url, projectId, windowId, lastAccessed',
       projects: 'id, lastOpened, isArchived',
-      embeddings: 'url, timestamp',
       snapshots: 'id, timestamp'
     });
   }

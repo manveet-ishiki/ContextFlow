@@ -19,13 +19,6 @@ export interface Project {
   isArchived: boolean;
 }
 
-export interface Embedding {
-  url: string; // Primary key
-  vector: Float32Array;
-  snippet: string;
-  timestamp: number;
-}
-
 export interface Snapshot {
   id: string;
   timestamp: number;
