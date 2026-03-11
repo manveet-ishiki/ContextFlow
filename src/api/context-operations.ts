@@ -1,5 +1,26 @@
 import { db } from '../db';
 import type { Project } from '../types';
+import { autoExport } from './sync';
+import { syncProjectsToChrome } from './chrome-sync';
+
+/**
+ * Syncs all projects to Chrome Sync Storage
+ */
+async function syncProjectMetadata(): Promise<void> {
+  try {
+    const projects = await getProjects(false); // Active projects only
+    const tabCounts = new Map<string, number>();
+
+    for (const project of projects) {
+      const count = await getProjectTabCount(project.id);
+      tabCounts.set(project.id, count);
+    }
+
+    await syncProjectsToChrome(projects, tabCounts);
+  } catch (error) {
+    console.warn('[ContextOperations] Chrome sync failed:', error);
+  }
+}
 
 /**
  * Saves the current window as a named context/project
@@ -65,6 +86,16 @@ export async function saveWindowAsContext(
       await chrome.tabs.remove(tabIdsToClose);
     }
 
+    // Trigger auto-export after saving context
+    await autoExport().catch(err =>
+      console.warn('[ContextOperations] Auto-export failed:', err)
+    );
+
+    // Sync to Chrome Sync Storage
+    await syncProjectMetadata().catch(err =>
+      console.warn('[ContextOperations] Chrome sync failed:', err)
+    );
+
     return projectId;
   } catch (error) {
     console.error('[ContextOperations] Failed to save window as context:', error);
@@ -123,6 +154,17 @@ export async function restoreContext(projectId: string): Promise<number> {
     });
 
     console.log(`[ContextOperations] Restored ${tabs.length} tabs for context: ${project.name}`);
+
+    // Trigger auto-export after restoring context
+    await autoExport().catch(err =>
+      console.warn('[ContextOperations] Auto-export failed:', err)
+    );
+
+    // Sync to Chrome Sync Storage
+    await syncProjectMetadata().catch(err =>
+      console.warn('[ContextOperations] Chrome sync failed:', err)
+    );
+
     return windowId;
   } catch (error) {
     console.error('[ContextOperations] Failed to restore context:', error);
@@ -162,6 +204,16 @@ export async function deleteProject(projectId: string): Promise<void> {
 
     // Delete the project
     await db.projects.delete(projectId);
+
+    // Trigger auto-export after deleting project
+    await autoExport().catch(err =>
+      console.warn('[ContextOperations] Auto-export failed:', err)
+    );
+
+    // Sync to Chrome Sync Storage
+    await syncProjectMetadata().catch(err =>
+      console.warn('[ContextOperations] Chrome sync failed:', err)
+    );
 
     console.log(`[ContextOperations] Deleted project ${projectId} and ${tabs.length} associated tabs`);
   } catch (error) {

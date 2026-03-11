@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { autoExport } from './sync';
 
 /**
  * Merges all browser windows into the current window
@@ -48,6 +49,11 @@ export async function mergeAllWindows(): Promise<{ tabsMoved: number; windowsClo
         }
       }
     }
+
+    // Trigger auto-export after merge
+    await autoExport().catch(err =>
+      console.warn('[TabOperations] Auto-export failed:', err)
+    );
 
     console.log(`[TabOperations] Merge complete: ${tabsMoved} tabs moved, ${windowsClosed} windows closed`);
     return { tabsMoved, windowsClosed };
@@ -104,6 +110,11 @@ export async function deduplicateTabs(): Promise<{ duplicatesRemoved: number }> 
     } else {
       console.log('[TabOperations] No duplicates found');
     }
+
+    // Trigger auto-export after deduplication
+    await autoExport().catch(err =>
+      console.warn('[TabOperations] Auto-export failed:', err)
+    );
 
     return { duplicatesRemoved: tabsToClose.length };
   } catch (error) {
