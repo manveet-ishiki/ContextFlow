@@ -7,12 +7,6 @@ import type { TabRecord, Project, Snapshot } from '../types';
 interface SyncData {
   tabs: TabRecord[];
   projects: Project[];
-  embeddings: Array<{
-    url: string;
-    vector: number[]; // Convert Float32Array to regular array for JSON
-    snippet: string;
-    timestamp: number;
-  }>;
   snapshots: Snapshot[];
   exportedAt: number;
   version: string;
@@ -67,25 +61,15 @@ export async function exportToLocalSync(): Promise<void> {
     console.log('[Sync] Starting export...');
 
     // Collect all data from Dexie
-    const [tabs, projects, embeddings, snapshots] = await Promise.all([
+    const [tabs, projects, snapshots] = await Promise.all([
       db.tabs.toArray(),
       db.projects.toArray(),
-      db.embeddings.toArray(),
       db.snapshots.toArray()
     ]);
-
-    // Convert embeddings to serializable format
-    const serializableEmbeddings = embeddings.map(e => ({
-      url: e.url,
-      vector: Array.from(e.vector), // Convert Float32Array to regular array
-      snippet: e.snippet,
-      timestamp: e.timestamp
-    }));
 
     const syncData: SyncData = {
       tabs,
       projects,
-      embeddings: serializableEmbeddings,
       snapshots,
       exportedAt: Date.now(),
       version: '1.0.0'
@@ -103,13 +87,29 @@ export async function exportToLocalSync(): Promise<void> {
 
     console.log('[Sync] Export complete:', {
       tabs: tabs.length,
-      projects: projects.length,
-      embeddings: embeddings.length
+      projects: projects.length
     });
   } catch (error) {
     console.error('[Sync] Export failed:', error);
     throw error;
   }
+}
+
+/**
+ * Validates sync data structure for corruption
+ */
+export async function validateSyncData(data: any): Promise<{ valid: boolean; errors: string[] }> {
+  const errors: string[] = [];
+
+  if (!data.version) errors.push('Missing version');
+  if (!Array.isArray(data.tabs)) errors.push('Invalid tabs array');
+  if (!Array.isArray(data.projects)) errors.push('Invalid projects array');
+  if (!data.exportedAt) errors.push('Missing export timestamp');
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
 }
 
 /**
@@ -132,26 +132,22 @@ export async function importFromLocalSync(): Promise<void> {
 
     console.log('[Sync] Starting import...');
 
-    // Convert embeddings back to Float32Array
-    const embeddingsWithTypedArrays = syncData.embeddings.map(e => ({
-      url: e.url,
-      vector: new Float32Array(e.vector),
-      snippet: e.snippet,
-      timestamp: e.timestamp
-    }));
+    // Validate data structure
+    const validation = await validateSyncData(syncData);
+    if (!validation.valid) {
+      throw new Error(`Invalid sync file: ${validation.errors.join(', ')}`);
+    }
 
     // Import data using bulkPut to merge/update
     await Promise.all([
       db.tabs.bulkPut(syncData.tabs),
       db.projects.bulkPut(syncData.projects),
-      db.embeddings.bulkPut(embeddingsWithTypedArrays),
       db.snapshots.bulkPut(syncData.snapshots)
     ]);
 
     console.log('[Sync] Import complete:', {
       tabs: syncData.tabs.length,
-      projects: syncData.projects.length,
-      embeddings: syncData.embeddings.length
+      projects: syncData.projects.length
     });
   } catch (error) {
     if ((error as Error).name === 'AbortError') {
