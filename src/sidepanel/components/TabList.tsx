@@ -100,49 +100,49 @@ export function TabList({
   return (
     <div className="space-y-3">
       {/* Selection Mode Controls */}
-      <div className="flex items-center justify-between px-3">
+      <div className="flex items-center justify-between px-3 min-h-[28px]">
         <button
           onClick={handleToggleSelectionMode}
           className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
         >
           {selectionMode ? (
             <>
-              <CheckSquare size={14} />
-              Exit Select
+              <CheckSquare size={13} />
+              <span>Exit</span>
             </>
           ) : (
             <>
-              <Square size={14} />
-              Select Tabs
+              <Square size={13} />
+              <span>Select</span>
             </>
           )}
         </button>
 
         {selectionMode && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {selectedTabs.size > 0 ? (
               <>
-                <span className="text-xs text-slate-400">
+                <span className="text-[11px] text-slate-500 font-medium">
                   {selectedTabs.size} selected
                 </span>
                 <button
                   onClick={handleDeselectAll}
-                  className="text-xs text-slate-400 hover:text-white"
+                  className="text-[11px] text-slate-400 hover:text-slate-200 underline underline-offset-2 transition-colors"
                 >
                   Clear
                 </button>
                 <button
                   onClick={handleCloseSelected}
-                  className="flex items-center gap-1 px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-xs font-medium text-white transition-colors"
+                  className="flex items-center gap-1 px-2 py-0.5 bg-red-600/90 hover:bg-red-600 rounded text-[11px] font-medium text-white transition-colors"
                 >
-                  <X size={12} />
-                  Close Selected
+                  <X size={11} />
+                  Close
                 </button>
               </>
             ) : (
               <button
                 onClick={handleSelectAll}
-                className="text-xs text-indigo-400 hover:text-indigo-300"
+                className="text-[11px] text-indigo-400 hover:text-indigo-300 underline underline-offset-2 transition-colors"
               >
                 Select All
               </button>
