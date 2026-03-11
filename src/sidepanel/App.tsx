@@ -1,19 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { TabList } from './components/TabList';
 import { ContextList } from './components/ContextList';
 import { useLiveTabs } from './hooks/useLiveTabs';
 import { mergeAllWindows, deduplicateTabs, hibernateInactiveTabs } from '../api/tab-operations';
 import { saveWindowAsContext } from '../api/context-operations';
+import { runStartupRecovery } from '../api/startup-recovery';
 import type { TabRecord } from '../types';
 import { Layers, BookMarked } from 'lucide-react';
 
 function App() {
   const { tabs, loading, reload } = useLiveTabs();
   const [searchResults, setSearchResults] = useState<TabRecord[]>([]);
-  const [isSemanticSearch, setIsSemanticSearch] = useState(false);
   const [activeView, setActiveView] = useState<'tabs' | 'contexts'>('tabs');
   const [isWorking, setIsWorking] = useState(false);
+  const [recoveryStatus, setRecoveryStatus] = useState<string | null>(null);
 
   // Handle tab close with optimistic update
   const handleTabClose = (tabId: number) => {
@@ -24,14 +25,27 @@ function App() {
     // The useLiveTabs hook will handle the actual update via listeners
   };
 
-  const handleSearchResults = (results: TabRecord[], semantic: boolean) => {
+  const handleSearchResults = (results: TabRecord[]) => {
     setSearchResults(results);
-    setIsSemanticSearch(semantic);
   };
 
   const handleActionComplete = () => {
     reload();
   };
+
+  // Run recovery check on startup
+  useEffect(() => {
+    runStartupRecovery().then(report => {
+      if (!report.indexedDBAvailable && report.recovered) {
+        setRecoveryStatus(`Data recovered from ${report.source}`);
+        setTimeout(() => setRecoveryStatus(null), 5000);
+      } else if (!report.indexedDBAvailable && !report.recovered) {
+        setRecoveryStatus('Warning: Data recovery failed');
+      }
+    }).catch(err => {
+      console.error('Recovery failed:', err);
+    });
+  }, []);
 
   const handleMergeWindows = async () => {
     if (isWorking) return;
@@ -89,6 +103,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white flex flex-col">
+      {/* Recovery Status Banner */}
+      {recoveryStatus && (
+        <div className="px-3 py-2 bg-yellow-900/50 border-b border-yellow-700 text-center">
+          <p className="text-xs text-yellow-300">{recoveryStatus}</p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="sticky top-0 bg-slate-900 border-b border-slate-700 z-10">
         <div className="p-3 space-y-2">
@@ -136,7 +157,7 @@ function App() {
               {searchResults.length > 0 && (
                 <div className="px-3 py-1.5 bg-slate-800/50 rounded-md text-center">
                   <p className="text-xs text-slate-400">
-                    {isSemanticSearch ? 'AI Search' : 'Filter'}: {searchResults.length} results
+                    {searchResults.length} results
                   </p>
                 </div>
               )}
