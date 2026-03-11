@@ -10,13 +10,11 @@ export default defineConfig({
       input: {
         sidepanel: resolve(__dirname, 'src/sidepanel/index.html'),
         background: resolve(__dirname, 'src/background/index.ts'),
-        content: resolve(__dirname, 'src/content/index.ts'),
-        offscreen: resolve(__dirname, 'src/offscreen/offscreen.html'),
       },
       output: {
         entryFileNames: (chunkInfo) => {
-          // Background and content scripts should not have hash in filename
-          if (chunkInfo.name === 'background' || chunkInfo.name === 'content') {
+          // Background script should not have hash in filename
+          if (chunkInfo.name === 'background') {
             return '[name].js';
           }
           return 'assets/[name]-[hash].js';

@@ -2,15 +2,14 @@
   "manifest_version": 3,
   "name": "ContextFlow",
   "version": "1.0.0",
-  "description": "Local-First AI Tab Manager - Organize tabs by context with semantic search",
+  "description": "Local-First Tab Manager - Organize tabs by context with instant search",
   "permissions": [
     "sidePanel",
     "tabs",
     "windows",
     "history",
     "storage",
-    "scripting",
-    "offscreen"
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -25,13 +24,6 @@
   "action": {
     "default_title": "Open ContextFlow"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    }
-  ],
   "icons": {
     "16": "icon.png",
     "48": "icon.png",
