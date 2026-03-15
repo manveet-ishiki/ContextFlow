@@ -17,13 +17,16 @@ function App() {
   const [activeView, setActiveView] = useState<'tabs' | 'contexts'>('tabs');
 
   // Handle tab close with optimistic update
-  const handleTabClose = useCallback((tabId: number) => {
-    // Optimistically remove from current view
-    if (searchResults.length > 0) {
-      setSearchResults(prev => prev.filter(t => t.id !== tabId));
-    }
-    // The useLiveTabs hook will handle the actual update via listeners
-  }, [searchResults.length]);
+  const handleTabClose = useCallback(
+    (tabId: number) => {
+      // Optimistically remove from current view
+      if (searchResults.length > 0) {
+        setSearchResults(prev => prev.filter(t => t.id !== tabId));
+      }
+      // The useLiveTabs hook will handle the actual update via listeners
+    },
+    [searchResults.length]
+  );
 
   const handleSearchResults = (results: TabRecord[]) => {
     setSearchResults(results);
@@ -35,16 +38,18 @@ function App() {
 
   // Run recovery check on startup
   useEffect(() => {
-    runStartupRecovery().then(report => {
-      if (!report.indexedDBAvailable && report.recovered) {
-        setRecoveryStatus(`Data recovered from ${report.source}`);
-        setTimeout(() => setRecoveryStatus(null), 5000);
-      } else if (!report.indexedDBAvailable && !report.recovered) {
-        setRecoveryStatus('Warning: Data recovery failed');
-      }
-    }).catch(err => {
-      console.error('Recovery failed:', err);
-    });
+    runStartupRecovery()
+      .then(report => {
+        if (!report.indexedDBAvailable && report.recovered) {
+          setRecoveryStatus(`Data recovered from ${report.source}`);
+          setTimeout(() => setRecoveryStatus(null), 5000);
+        } else if (!report.indexedDBAvailable && !report.recovered) {
+          setRecoveryStatus('Warning: Data recovery failed');
+        }
+      })
+      .catch(err => {
+        console.error('Recovery failed:', err);
+      });
   }, []);
 
   const handleMergeWindows = useCallback(async () => {
@@ -73,18 +78,21 @@ function App() {
     }
   }, [isWorking, reload]);
 
-  const handleSaveContext = useCallback(async (name: string) => {
-    if (isWorking) return;
-    setIsWorking(true);
-    try {
-      await saveWindowAsContext(name);
-      reload();
-    } catch (error) {
-      console.error('Save context failed:', error);
-    } finally {
-      setIsWorking(false);
-    }
-  }, [isWorking, reload]);
+  const handleSaveContext = useCallback(
+    async (name: string) => {
+      if (isWorking) return;
+      setIsWorking(true);
+      try {
+        await saveWindowAsContext(name);
+        reload();
+      } catch (error) {
+        console.error('Save context failed:', error);
+      } finally {
+        setIsWorking(false);
+      }
+    },
+    [isWorking, reload]
+  );
 
   const displayTabs = searchResults.length > 0 ? searchResults : tabs;
 
@@ -102,7 +110,6 @@ function App() {
         <div className="space-y-2">
           <SearchBar onResultsChange={handleSearchResults} />
           <ToggleHeader tabs={tabs} activeView={activeView} onViewChange={setActiveView} />
-          
         </div>
       </div>
 
@@ -114,9 +121,7 @@ function App() {
               {/* Search Results Info */}
               {searchResults.length > 0 && (
                 <div className="px-3 py-1.5 bg-surface/50 rounded-md text-center">
-                  <p className="text-xs text-text-tertiary">
-                    {searchResults.length} results
-                  </p>
+                  <p className="text-xs text-text-tertiary">{searchResults.length} results</p>
                 </div>
               )}
 
@@ -148,9 +153,7 @@ function App() {
 
       {/* Footer */}
       <div className="border-t border-surface bg-background px-3 py-2">
-        <div className="text-[10px] text-border-muted text-center">
-          ContextFlow · Local-First
-        </div>
+        <div className="text-[10px] text-border-muted text-center">ContextFlow · Local-First</div>
       </div>
     </div>
   );

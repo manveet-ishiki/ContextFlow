@@ -126,8 +126,8 @@ export function PowerActions({ onActionComplete }: PowerActionsProps) {
           <input
             type="text"
             value={contextName}
-            onChange={(e) => setContextName(e.target.value)}
-            onKeyDown={(e) => {
+            onChange={e => setContextName(e.target.value)}
+            onKeyDown={e => {
               if (e.key === 'Enter') {
                 handleSaveContext();
               } else if (e.key === 'Escape') {

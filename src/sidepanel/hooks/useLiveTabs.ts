@@ -22,7 +22,7 @@ export function useLiveTabs() {
           title: tab.title || 'Untitled',
           favIconUrl: tab.favIconUrl,
           windowId: tab.windowId,
-          lastAccessed: Date.now()
+          lastAccessed: Date.now(),
         }));
 
       setTabs(tabRecords);

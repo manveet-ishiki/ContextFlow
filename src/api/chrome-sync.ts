@@ -27,24 +27,25 @@ const MAX_PROJECTS_IN_SYNC = 50; // Conservative limit to stay under quota
  * Syncs project metadata to Chrome Sync Storage
  * Only stores critical metadata, not tab content
  */
-export async function syncProjectsToChrome(projects: Project[], tabCounts: Map<string, number>): Promise<void> {
+export async function syncProjectsToChrome(
+  projects: Project[],
+  tabCounts: Map<string, number>
+): Promise<void> {
   try {
     // Convert to lightweight metadata
-    const metadata: SyncedProjectMetadata[] = projects
-      .slice(0, MAX_PROJECTS_IN_SYNC)
-      .map(p => ({
-        id: p.id,
-        name: p.name,
-        color: p.color,
-        lastOpened: p.lastOpened,
-        isArchived: p.isArchived,
-        tabCount: tabCounts.get(p.id) || 0
-      }));
+    const metadata: SyncedProjectMetadata[] = projects.slice(0, MAX_PROJECTS_IN_SYNC).map(p => ({
+      id: p.id,
+      name: p.name,
+      color: p.color,
+      lastOpened: p.lastOpened,
+      isArchived: p.isArchived,
+      tabCount: tabCounts.get(p.id) || 0,
+    }));
 
     const syncData: ChromeSyncData = {
       projects: metadata,
       lastSynced: Date.now(),
-      version: '1.0.0'
+      version: '1.0.0',
     };
 
     await chrome.storage.sync.set({ [SYNC_KEY]: syncData });
@@ -69,7 +70,7 @@ export async function getProjectsFromChrome(): Promise<ChromeSyncData | null> {
   try {
     const result = await chrome.storage.sync.get(SYNC_KEY);
     const data = result[SYNC_KEY];
-    return (data && typeof data === 'object' && 'projects' in data) ? data as ChromeSyncData : null;
+    return data && typeof data === 'object' && 'projects' in data ? (data as ChromeSyncData) : null;
   } catch (error) {
     console.error('[ChromeSync] Failed to retrieve sync data:', error);
     return null;

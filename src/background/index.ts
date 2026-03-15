@@ -1,8 +1,5 @@
 import { db } from '../db';
-import {
-  MessageType,
-  type Message
-} from '../messages';
+import { MessageType, type Message } from '../messages';
 
 console.log('[Background] ContextFlow background service worker started');
 
@@ -13,7 +10,7 @@ chrome.runtime.onInstalled.addListener(() => {
   console.log('[Background] Extension installed');
 
   // Enable side panel for all tabs
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((error) => {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => {
     console.error('[Background] Failed to set panel behavior:', error);
   });
 });
@@ -21,7 +18,7 @@ chrome.runtime.onInstalled.addListener(() => {
 /**
  * Handle tab creation - add to database
  */
-chrome.tabs.onCreated.addListener(async (tab) => {
+chrome.tabs.onCreated.addListener(async tab => {
   if (!tab.id || !tab.url) return;
 
   console.log(`[Background] Tab created: ${tab.id} - ${tab.title}`);
@@ -34,7 +31,7 @@ chrome.tabs.onCreated.addListener(async (tab) => {
       favIconUrl: tab.favIconUrl,
       windowId: tab.windowId,
       lastAccessed: Date.now(),
-      visitedAt: Date.now()
+      visitedAt: Date.now(),
     });
   } catch (error) {
     console.error('[Background] Failed to save new tab to database:', error);
@@ -61,7 +58,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       favIconUrl: tab.favIconUrl,
       windowId: tab.windowId,
       lastAccessed: Date.now(),
-      visitedAt: Date.now() // Track when user visited this URL
+      visitedAt: Date.now(), // Track when user visited this URL
     });
   } catch (error) {
     console.error('[Background] Failed to update tab in database:', error);
@@ -71,13 +68,13 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 /**
  * Handle tab activation - update lastAccessed timestamp
  */
-chrome.tabs.onActivated.addListener(async (activeInfo) => {
+chrome.tabs.onActivated.addListener(async activeInfo => {
   try {
     const existingTab = await db.tabs.get(activeInfo.tabId);
     if (existingTab) {
       await db.tabs.update(activeInfo.tabId, {
         lastAccessed: Date.now(),
-        visitedAt: Date.now() // Update visit timestamp when tab is activated
+        visitedAt: Date.now(), // Update visit timestamp when tab is activated
       });
     }
   } catch (error) {
@@ -88,7 +85,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 /**
  * Handle tab removal - remove from database
  */
-chrome.tabs.onRemoved.addListener(async (tabId) => {
+chrome.tabs.onRemoved.addListener(async tabId => {
   console.log(`[Background] Tab removed: ${tabId}`);
 
   try {
@@ -102,17 +99,24 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
  * Handle messages from content scripts and side panel
  */
 chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) => {
-  console.log('[Background] Received message:', message.type, 'from:', sender.tab?.id || 'extension');
+  console.log(
+    '[Background] Received message:',
+    message.type,
+    'from:',
+    sender.tab?.id || 'extension'
+  );
 
   // Handle power feature requests from side panel
   // These will be handled by the API layer, but background worker can coordinate
-  if ([
-    MessageType.MERGE_ALL_WINDOWS,
-    MessageType.DEDUPLICATE_TABS,
-    MessageType.SAVE_WINDOW_AS_CONTEXT,
-    MessageType.RESTORE_CONTEXT,
-    MessageType.HIBERNATE_INACTIVE_TABS
-  ].includes(message.type)) {
+  if (
+    [
+      MessageType.MERGE_ALL_WINDOWS,
+      MessageType.DEDUPLICATE_TABS,
+      MessageType.SAVE_WINDOW_AS_CONTEXT,
+      MessageType.RESTORE_CONTEXT,
+      MessageType.HIBERNATE_INACTIVE_TABS,
+    ].includes(message.type)
+  ) {
     console.log(`[Background] Forwarding operation request: ${message.type}`);
     sendResponse({ acknowledged: true });
     return false;

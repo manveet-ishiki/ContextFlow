@@ -30,7 +30,7 @@ export async function mergeAllWindows(): Promise<{ tabsMoved: number; windowsClo
           try {
             await chrome.tabs.move(tab.id, {
               windowId: currentWindow.id,
-              index: -1 // Append to end
+              index: -1, // Append to end
             });
             tabsMoved++;
           } catch (error) {
@@ -51,11 +51,11 @@ export async function mergeAllWindows(): Promise<{ tabsMoved: number; windowsClo
     }
 
     // Trigger auto-export after merge
-    await autoExport().catch(err =>
-      console.warn('[TabOperations] Auto-export failed:', err)
-    );
+    await autoExport().catch(err => console.warn('[TabOperations] Auto-export failed:', err));
 
-    console.log(`[TabOperations] Merge complete: ${tabsMoved} tabs moved, ${windowsClosed} windows closed`);
+    console.log(
+      `[TabOperations] Merge complete: ${tabsMoved} tabs moved, ${windowsClosed} windows closed`
+    );
     return { tabsMoved, windowsClosed };
   } catch (error) {
     console.error('[TabOperations] Failed to merge windows:', error);
@@ -79,9 +79,11 @@ export async function deduplicateTabs(): Promise<{ duplicatesRemoved: number }> 
       if (!tab.url || !tab.id) continue;
 
       // Skip chrome:// and special URLs
-      if (tab.url.startsWith('chrome://') ||
-          tab.url.startsWith('chrome-extension://') ||
-          tab.url.startsWith('about:')) {
+      if (
+        tab.url.startsWith('chrome://') ||
+        tab.url.startsWith('chrome-extension://') ||
+        tab.url.startsWith('about:')
+      ) {
         continue;
       }
 
@@ -112,9 +114,7 @@ export async function deduplicateTabs(): Promise<{ duplicatesRemoved: number }> 
     }
 
     // Trigger auto-export after deduplication
-    await autoExport().catch(err =>
-      console.warn('[TabOperations] Auto-export failed:', err)
-    );
+    await autoExport().catch(err => console.warn('[TabOperations] Auto-export failed:', err));
 
     return { duplicatesRemoved: tabsToClose.length };
   } catch (error) {
@@ -137,10 +137,7 @@ export async function hibernateInactiveTabs(
     const thresholdTime = now - inactiveThresholdMs;
 
     // Query Dexie for inactive tabs
-    const inactiveTabs = await db.tabs
-      .where('lastAccessed')
-      .below(thresholdTime)
-      .toArray();
+    const inactiveTabs = await db.tabs.where('lastAccessed').below(thresholdTime).toArray();
 
     let tabsHibernated = 0;
 

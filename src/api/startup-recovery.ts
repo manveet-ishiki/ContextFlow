@@ -81,7 +81,7 @@ export async function runStartupRecovery(): Promise<RecoveryReport> {
     localExportAvailable: false,
     indexedDBAvailable: false,
     recovered: false,
-    errors: []
+    errors: [],
   };
 
   console.log('[Recovery] Starting startup recovery check...');

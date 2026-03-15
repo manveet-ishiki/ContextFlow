@@ -49,7 +49,7 @@ export async function saveWindowAsContext(
       name,
       color,
       lastOpened: Date.now(),
-      isArchived: false
+      isArchived: false,
     });
 
     // Save snapshot of all tabs
@@ -64,7 +64,7 @@ export async function saveWindowAsContext(
           projectId,
           windowId: -1, // -1 indicates this is a saved/archived tab
           lastAccessed: Date.now(),
-          visitedAt: Date.now()
+          visitedAt: Date.now(),
         });
       }
     }
@@ -74,7 +74,7 @@ export async function saveWindowAsContext(
     // Create a new tab to keep browser alive
     const newTab = await chrome.tabs.create({
       url: 'chrome://newtab',
-      active: true
+      active: true,
     });
 
     // Close all other tabs except the new one
@@ -87,9 +87,7 @@ export async function saveWindowAsContext(
     }
 
     // Trigger auto-export after saving context
-    await autoExport().catch(err =>
-      console.warn('[ContextOperations] Auto-export failed:', err)
-    );
+    await autoExport().catch(err => console.warn('[ContextOperations] Auto-export failed:', err));
 
     // Sync to Chrome Sync Storage
     await syncProjectMetadata().catch(err =>
@@ -117,10 +115,7 @@ export async function restoreContext(projectId: string): Promise<number> {
     }
 
     // Get all tabs for this project
-    const tabs = await db.tabs
-      .where('projectId')
-      .equals(projectId)
-      .toArray();
+    const tabs = await db.tabs.where('projectId').equals(projectId).toArray();
 
     if (tabs.length === 0) {
       throw new Error(`No tabs found for project: ${project.name}`);
@@ -129,7 +124,7 @@ export async function restoreContext(projectId: string): Promise<number> {
     // Create new window
     const newWindow = await chrome.windows.create({
       focused: true,
-      url: tabs[0].url // First tab
+      url: tabs[0].url, // First tab
     });
 
     if (!newWindow?.id) {
@@ -144,21 +139,19 @@ export async function restoreContext(projectId: string): Promise<number> {
       await chrome.tabs.create({
         windowId,
         url: tab.url,
-        active: false
+        active: false,
       });
     }
 
     // Update project lastOpened timestamp
     await db.projects.update(projectId, {
-      lastOpened: Date.now()
+      lastOpened: Date.now(),
     });
 
     console.log(`[ContextOperations] Restored ${tabs.length} tabs for context: ${project.name}`);
 
     // Trigger auto-export after restoring context
-    await autoExport().catch(err =>
-      console.warn('[ContextOperations] Auto-export failed:', err)
-    );
+    await autoExport().catch(err => console.warn('[ContextOperations] Auto-export failed:', err));
 
     // Sync to Chrome Sync Storage
     await syncProjectMetadata().catch(err =>
@@ -178,7 +171,7 @@ export async function restoreContext(projectId: string): Promise<number> {
 export async function archiveProject(projectId: string): Promise<void> {
   try {
     await db.projects.update(projectId, {
-      isArchived: true
+      isArchived: true,
     });
     console.log(`[ContextOperations] Archived project: ${projectId}`);
   } catch (error) {
@@ -193,10 +186,7 @@ export async function archiveProject(projectId: string): Promise<void> {
 export async function deleteProject(projectId: string): Promise<void> {
   try {
     // Delete all tabs associated with this project
-    const tabs = await db.tabs
-      .where('projectId')
-      .equals(projectId)
-      .toArray();
+    const tabs = await db.tabs.where('projectId').equals(projectId).toArray();
 
     for (const tab of tabs) {
       await db.tabs.delete(tab.id);
@@ -206,16 +196,16 @@ export async function deleteProject(projectId: string): Promise<void> {
     await db.projects.delete(projectId);
 
     // Trigger auto-export after deleting project
-    await autoExport().catch(err =>
-      console.warn('[ContextOperations] Auto-export failed:', err)
-    );
+    await autoExport().catch(err => console.warn('[ContextOperations] Auto-export failed:', err));
 
     // Sync to Chrome Sync Storage
     await syncProjectMetadata().catch(err =>
       console.warn('[ContextOperations] Chrome sync failed:', err)
     );
 
-    console.log(`[ContextOperations] Deleted project ${projectId} and ${tabs.length} associated tabs`);
+    console.log(
+      `[ContextOperations] Deleted project ${projectId} and ${tabs.length} associated tabs`
+    );
   } catch (error) {
     console.error('[ContextOperations] Failed to delete project:', error);
     throw error;
@@ -245,10 +235,7 @@ export async function getProjects(includeArchived: boolean = false): Promise<Pro
  */
 export async function getProjectTabCount(projectId: string): Promise<number> {
   try {
-    return await db.tabs
-      .where('projectId')
-      .equals(projectId)
-      .count();
+    return await db.tabs.where('projectId').equals(projectId).count();
   } catch (error) {
     console.error('[ContextOperations] Failed to get project tab count:', error);
     return 0;

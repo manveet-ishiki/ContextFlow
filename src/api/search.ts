@@ -27,7 +27,7 @@ export async function liveTabSearch(query: string): Promise<TabRecord[]> {
       title: tab.title || '',
       favIconUrl: tab.favIconUrl,
       windowId: tab.windowId,
-      lastAccessed: Date.now()
+      lastAccessed: Date.now(),
     }));
 
     return results;
@@ -40,7 +40,9 @@ export async function liveTabSearch(query: string): Promise<TabRecord[]> {
 /**
  * Searches through saved contexts/projects
  */
-export async function searchProjects(query: string): Promise<Array<{ id: string; name: string; tabCount: number }>> {
+export async function searchProjects(
+  query: string
+): Promise<Array<{ id: string; name: string; tabCount: number }>> {
   try {
     const queryLower = query.toLowerCase();
 
@@ -54,16 +56,13 @@ export async function searchProjects(query: string): Promise<Array<{ id: string;
 
     // Get tab counts for each project
     const results = await Promise.all(
-      matchingProjects.map(async (project) => {
-        const tabCount = await db.tabs
-          .where('projectId')
-          .equals(project.id)
-          .count();
+      matchingProjects.map(async project => {
+        const tabCount = await db.tabs.where('projectId').equals(project.id).count();
 
         return {
           id: project.id,
           name: project.name,
-          tabCount
+          tabCount,
         };
       })
     );

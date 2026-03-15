@@ -12,7 +12,7 @@ class ContextFlowDB extends Dexie {
     this.version(1).stores({
       tabs: 'id, url, projectId, windowId, lastAccessed',
       projects: 'id, lastOpened, isArchived',
-      snapshots: 'id, timestamp'
+      snapshots: 'id, timestamp',
     });
   }
 }
