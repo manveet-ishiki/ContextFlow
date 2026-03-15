@@ -26,13 +26,13 @@ export function SearchBar({ onResultsChange }: SearchBarProps) {
 
   return (
     <div className="relative">
-      <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+      <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
       <input
         type="text"
         value={query}
         onChange={handleInputChange}
         placeholder="Search tabs..."
-        className="w-full pl-8 pr-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+        className="w-full pl-8 pr-3 py-1.5 bg-surface border border-border rounded text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-primary transition-colors"
       />
     </div>
   );

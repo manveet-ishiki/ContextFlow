@@ -1,26 +1,25 @@
-import { useState } from 'react';
-import { Combine, Copy, Moon, Save } from 'lucide-react';
+import { useState, memo } from 'react';
+import { Combine, Copy, Save } from 'lucide-react';
+import { Button } from './ui';
 
 interface WindowHeaderProps {
   windowId: number;
   tabCount: number;
   onMergeWindows: () => void;
   onDeduplicateTabs: () => void;
-  onHibernate: () => void;
   onSaveContext: (name: string) => void;
 }
 
 /**
  * Minimal window header with inline action buttons
  */
-export function WindowHeader({
+export const WindowHeader = memo(({
   windowId,
   tabCount,
   onMergeWindows,
   onDeduplicateTabs,
-  onHibernate,
   onSaveContext
-}: WindowHeaderProps) {
+}: WindowHeaderProps) => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [contextName, setContextName] = useState('');
 
@@ -34,49 +33,41 @@ export function WindowHeader({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between px-3 py-2">
-        <h3 className="text-xs font-medium text-slate-400">
+      <div className="flex items-center justify-between py-1.5">
+        <h3 className="text-xs font-medium text-text-muted">
           Window {windowId} · {tabCount} tabs
         </h3>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             onClick={onMergeWindows}
-            className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+            className="p-1.5 hover:bg-surface-hover/50 rounded transition-colors"
             title="Merge all windows"
           >
-            <Combine size={14} className="text-slate-400" />
+            <Combine size={13} className="text-text-muted hover:text-text-secondary" />
           </button>
 
           <button
             onClick={onDeduplicateTabs}
-            className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+            className="p-1.5 hover:bg-surface-hover/50 rounded transition-colors"
             title="Remove duplicates"
           >
-            <Copy size={14} className="text-slate-400" />
-          </button>
-
-          <button
-            onClick={onHibernate}
-            className="p-1.5 hover:bg-slate-700 rounded transition-colors"
-            title="Hibernate inactive"
-          >
-            <Moon size={14} className="text-slate-400" />
+            <Copy size={13} className="text-text-muted hover:text-text-secondary" />
           </button>
 
           <button
             onClick={() => setShowSaveDialog(true)}
-            className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+            className="p-1.5 hover:bg-surface-hover/50 rounded transition-colors"
             title="Save as context"
           >
-            <Save size={14} className="text-indigo-400" />
+            <Save size={13} className="text-primary-muted hover:text-primary-muted" />
           </button>
         </div>
       </div>
 
       {showSaveDialog && (
-        <div className="px-3 pb-2">
-          <div className="bg-slate-800 rounded-md p-2 space-y-2 border border-slate-700">
+        <div className="pb-2">
+          <div className="bg-surface/50 rounded-lg p-3 space-y-2.5 border border-border/50">
             <input
               type="text"
               value={contextName}
@@ -89,30 +80,43 @@ export function WindowHeader({
                 }
               }}
               placeholder="Context name..."
-              className="w-full px-2 py-1.5 bg-slate-900 border border-slate-600 rounded text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              className="w-full px-3 py-2 bg-background border border-border-muted rounded-md text-sm text-white placeholder-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               autoFocus
             />
             <div className="flex gap-2">
-              <button
+              <Button
                 onClick={handleSave}
                 disabled={!contextName.trim()}
-                className="flex-1 px-2 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 rounded text-xs font-medium transition-colors"
+                variant="primary"
+                size="sm"
+                className="flex-1"
               >
                 Save
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   setShowSaveDialog(false);
                   setContextName('');
                 }}
-                className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs font-medium transition-colors"
+                variant="secondary"
+                size="sm"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.windowId === nextProps.windowId &&
+    prevProps.tabCount === nextProps.tabCount &&
+    prevProps.onMergeWindows === nextProps.onMergeWindows &&
+    prevProps.onDeduplicateTabs === nextProps.onDeduplicateTabs &&
+    prevProps.onSaveContext === nextProps.onSaveContext
+  );
+});
+
+WindowHeader.displayName = 'WindowHeader';

@@ -1,7 +1,8 @@
 import { memo } from 'react';
-import { X } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import type { TabRecord } from '../../types';
 import { activateTab, closeTab } from '../../api/tab-operations';
+import { cn } from '../../lib/utils';
 
 interface TabItemProps {
   tab: TabRecord;
@@ -50,7 +51,7 @@ export const TabItem = memo(({
     }
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onToggleSelect) {
       onToggleSelect(tab.id);
@@ -62,20 +63,30 @@ export const TabItem = memo(({
 
   return (
     <div
-      className={`flex items-center gap-2 px-3 py-2 hover:bg-slate-700 rounded-md cursor-pointer group transition-colors ${
-        isSelected ? 'bg-slate-700/50 border border-indigo-500/30' : ''
-      }`}
+      className={cn(
+        "flex items-center gap-2.5 pl-0 pr-3 py-2.5 hover:bg-surface-hover/50 rounded-md cursor-pointer group transition-all",
+        isSelected && "bg-primary/10"
+      )}
       onClick={handleClick}
     >
-      {showCheckbox && (
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={handleCheckboxChange}
-          onClick={(e) => e.stopPropagation()}
-          className="w-3.5 h-3.5 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer"
-        />
-      )}
+      {/* Always reserve space for checkbox to prevent layout shift */}
+      <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+        {showCheckbox && (
+          <div
+            onClick={handleCheckboxClick}
+            className={cn(
+              "w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer transition-all duration-200",
+              isSelected
+                ? "bg-primary border-primary scale-100"
+                : "border-border-muted bg-transparent hover:border-text-muted hover:bg-surface/50"
+            )}
+          >
+            {isSelected && (
+              <Check size={12} className="text-white" strokeWidth={3} />
+            )}
+          </div>
+        )}
+      </div>
 
       <img
         src={favicon}
@@ -90,18 +101,20 @@ export const TabItem = memo(({
         <div className="text-sm font-medium text-white truncate">
           {tab.title}
         </div>
-        <div className="text-xs text-slate-400 truncate">
+        <div className="text-xs text-text-tertiary truncate">
           {new URL(tab.url).hostname}
         </div>
       </div>
 
-      <button
-        onClick={handleClose}
-        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-600 rounded transition-opacity"
-        title="Close tab"
-      >
-        <X size={14} className="text-slate-300" />
-      </button>
+      {!showCheckbox && (
+        <button
+          onClick={handleClose}
+          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-border-muted rounded transition-all"
+          title="Close tab"
+        >
+          <X size={14} className="text-text-secondary" />
+        </button>
+      )}
     </div>
   );
 }, (prevProps, nextProps) => {

@@ -1,37 +1,37 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { TabList } from './components/TabList';
 import { ContextList } from './components/ContextList';
 import { useLiveTabs } from './hooks/useLiveTabs';
-import { mergeAllWindows, deduplicateTabs, hibernateInactiveTabs } from '../api/tab-operations';
+import { mergeAllWindows, deduplicateTabs } from '../api/tab-operations';
 import { saveWindowAsContext } from '../api/context-operations';
 import { runStartupRecovery } from '../api/startup-recovery';
 import type { TabRecord } from '../types';
-import { Layers, BookMarked } from 'lucide-react';
+import ToggleHeader from './components/ToggleHeader';
 
 function App() {
   const { tabs, loading, reload } = useLiveTabs();
   const [searchResults, setSearchResults] = useState<TabRecord[]>([]);
-  const [activeView, setActiveView] = useState<'tabs' | 'contexts'>('tabs');
   const [isWorking, setIsWorking] = useState(false);
   const [recoveryStatus, setRecoveryStatus] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<'tabs' | 'contexts'>('tabs');
 
   // Handle tab close with optimistic update
-  const handleTabClose = (tabId: number) => {
+  const handleTabClose = useCallback((tabId: number) => {
     // Optimistically remove from current view
     if (searchResults.length > 0) {
       setSearchResults(prev => prev.filter(t => t.id !== tabId));
     }
     // The useLiveTabs hook will handle the actual update via listeners
-  };
+  }, [searchResults.length]);
 
   const handleSearchResults = (results: TabRecord[]) => {
     setSearchResults(results);
   };
 
-  const handleActionComplete = () => {
+  const handleActionComplete = useCallback(() => {
     reload();
-  };
+  }, [reload]);
 
   // Run recovery check on startup
   useEffect(() => {
@@ -47,7 +47,7 @@ function App() {
     });
   }, []);
 
-  const handleMergeWindows = async () => {
+  const handleMergeWindows = useCallback(async () => {
     if (isWorking) return;
     setIsWorking(true);
     try {
@@ -58,9 +58,9 @@ function App() {
     } finally {
       setIsWorking(false);
     }
-  };
+  }, [isWorking, reload]);
 
-  const handleDeduplicate = async () => {
+  const handleDeduplicate = useCallback(async () => {
     if (isWorking) return;
     setIsWorking(true);
     try {
@@ -71,22 +71,9 @@ function App() {
     } finally {
       setIsWorking(false);
     }
-  };
+  }, [isWorking, reload]);
 
-  const handleHibernate = async () => {
-    if (isWorking) return;
-    setIsWorking(true);
-    try {
-      await hibernateInactiveTabs();
-      reload();
-    } catch (error) {
-      console.error('Hibernation failed:', error);
-    } finally {
-      setIsWorking(false);
-    }
-  };
-
-  const handleSaveContext = async (name: string) => {
+  const handleSaveContext = useCallback(async (name: string) => {
     if (isWorking) return;
     setIsWorking(true);
     try {
@@ -97,66 +84,37 @@ function App() {
     } finally {
       setIsWorking(false);
     }
-  };
+  }, [isWorking, reload]);
 
   const displayTabs = searchResults.length > 0 ? searchResults : tabs;
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col">
+    <div className="p-4 min-h-screen bg-background text-text-primary flex flex-col">
       {/* Recovery Status Banner */}
       {recoveryStatus && (
-        <div className="px-3 py-2 bg-yellow-900/50 border-b border-yellow-700 text-center">
-          <p className="text-xs text-yellow-300">{recoveryStatus}</p>
+        <div className="px-3 py-2 bg-warning-surface/50 border-b border-warning-border text-center">
+          <p className="text-xs text-warning">{recoveryStatus}</p>
         </div>
       )}
 
       {/* Header */}
-      <div className="sticky top-0 bg-slate-900 border-b border-slate-700 z-10">
-        <div className="p-3 space-y-2">
+      <div className="space-y-2 sticky top-0 bg-background border-b border-border z-10">
+        <div className="space-y-2">
           <SearchBar onResultsChange={handleSearchResults} />
-
-          {/* View Toggle */}
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => setActiveView('tabs')}
-              className={`flex-1 py-1.5 px-3 rounded text-xs font-medium transition-colors ${
-                activeView === 'tabs'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-1.5">
-                <Layers size={12} />
-                Tabs ({tabs.filter(t => t.windowId !== -1).length})
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveView('contexts')}
-              className={`flex-1 py-1.5 px-3 rounded text-xs font-medium transition-colors ${
-                activeView === 'contexts'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-1.5">
-                <BookMarked size={12} />
-                Saved
-              </div>
-            </button>
-          </div>
+          <ToggleHeader tabs={tabs} activeView={activeView} onViewChange={setActiveView} />
+          
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="p-4 space-y-4">
+        <div className="space-y-4">
           {activeView === 'tabs' ? (
             <>
               {/* Search Results Info */}
               {searchResults.length > 0 && (
-                <div className="px-3 py-1.5 bg-slate-800/50 rounded-md text-center">
-                  <p className="text-xs text-slate-400">
+                <div className="px-3 py-1.5 bg-surface/50 rounded-md text-center">
+                  <p className="text-xs text-text-tertiary">
                     {searchResults.length} results
                   </p>
                 </div>
@@ -165,7 +123,7 @@ function App() {
               {/* Tab List */}
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="text-slate-400 text-sm">Loading tabs...</div>
+                  <div className="text-text-tertiary text-sm">Loading tabs...</div>
                 </div>
               ) : (
                 <TabList
@@ -173,7 +131,6 @@ function App() {
                   onTabClose={handleTabClose}
                   onMergeWindows={handleMergeWindows}
                   onDeduplicateTabs={handleDeduplicate}
-                  onHibernate={handleHibernate}
                   onSaveContext={handleSaveContext}
                 />
               )}
@@ -190,8 +147,8 @@ function App() {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-slate-800 bg-slate-900 px-3 py-2">
-        <div className="text-[10px] text-slate-600 text-center">
+      <div className="border-t border-surface bg-background px-3 py-2">
+        <div className="text-[10px] text-border-muted text-center">
           ContextFlow · Local-First
         </div>
       </div>
