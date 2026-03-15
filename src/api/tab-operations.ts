@@ -200,3 +200,18 @@ export async function activateTab(tabId: number): Promise<void> {
     throw error;
   }
 }
+
+/**
+ * Moves a tab to a different window
+ */
+export async function moveTabToWindow(tabId: number, targetWindowId: number): Promise<void> {
+  try {
+    await chrome.tabs.move(tabId, { windowId: targetWindowId, index: -1 });
+  } catch (error) {
+    console.error(
+      `[TabOperations] Failed to move tab ${tabId} to window ${targetWindowId}:`,
+      error
+    );
+    throw error;
+  }
+}
