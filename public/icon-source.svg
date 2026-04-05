@@ -1,0 +1,32 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" rx="240" fill="black"/>
+  <g filter="url(#glow)">
+    <path d="M512 152L864 320L512 488L160 320L512 152Z" fill="url(#top)"/>
+    <path d="M512 374L820 522L512 670L204 522L512 374Z" fill="url(#middle)"/>
+    <path d="M512 596L776 724L512 852L248 724L512 596Z" fill="url(#bottom)"/>
+  </g>
+  <defs>
+    <linearGradient id="top" x1="208" y1="194" x2="734" y2="572" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B78AFF"/>
+      <stop offset="1" stop-color="#7D39F2"/>
+    </linearGradient>
+    <linearGradient id="middle" x1="252" y1="414" x2="710" y2="748" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A874FF"/>
+      <stop offset="1" stop-color="#7B3DF0"/>
+    </linearGradient>
+    <linearGradient id="bottom" x1="292" y1="634" x2="666" y2="920" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9B66FF"/>
+      <stop offset="1" stop-color="#7637EC"/>
+    </linearGradient>
+    <filter id="glow" x="112" y="116" width="800" height="772" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="10"/>
+      <feGaussianBlur stdDeviation="20"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.357 0 0 0 0 0.192 0 0 0 0 0.729 0 0 0 0.22 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_1" result="shape"/>
+    </filter>
+  </defs>
+</svg>

@@ -10,10 +10,6 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
-/**
- * Reusable button component with variants
- * Follows ContextFlow design system
- */
 export const Button = memo(
   ({
     variant = 'secondary',
@@ -25,46 +21,46 @@ export const Button = memo(
     className = '',
     ...props
   }: ButtonProps) => {
-    const baseStyles =
-      'rounded-md font-medium transition-colors duration-150 inline-flex items-center justify-center gap-2';
+    const base =
+      'rounded-lg font-medium transition-colors duration-150 inline-flex items-center justify-center gap-1.5';
 
-    const variantStyles = {
+    const variants = {
       primary:
-        'bg-primary hover:bg-primary-hover text-text-primary disabled:bg-surface-hover disabled:text-text-muted',
+        'bg-primary hover:bg-primary-hover text-white disabled:bg-surface-hover disabled:text-text-muted',
       secondary:
-        'bg-surface-hover hover:bg-surface text-text-primary disabled:bg-surface disabled:text-text-muted',
+        'bg-surface-hover hover:bg-border text-text-primary disabled:bg-surface disabled:text-text-muted',
       danger:
-        'bg-danger hover:bg-danger-hover text-text-primary disabled:bg-surface-hover disabled:text-text-muted',
+        'bg-danger hover:bg-danger-hover text-white disabled:bg-surface-hover disabled:text-text-muted',
       ghost:
-        'bg-transparent hover:bg-surface-hover/50 text-text-tertiary hover:text-text-secondary disabled:text-text-muted',
+        'bg-transparent hover:bg-surface-hover/60 text-text-tertiary hover:text-text-secondary disabled:text-text-muted',
     };
 
-    const sizeStyles = {
-      sm: 'px-2 py-1 text-xs',
+    const sizes = {
+      sm: 'px-2.5 py-1 text-xs',
       md: 'px-3 py-1.5 text-sm',
-      lg: 'px-4 py-2 text-base',
+      lg: 'px-4 py-2 text-sm',
     };
 
     return (
       <button
-        className={cn(baseStyles, variantStyles[variant], sizeStyles[size], className)}
+        className={cn(base, variants[variant], sizes[size], className)}
         disabled={disabled || loading}
         {...props}
       >
         {loading ? (
           <>
-            <Loader2 size={14} className="animate-spin" />
+            <Loader2 size={13} className="animate-spin" />
             {children}
           </>
         ) : (
           <>
-            {icon && icon}
+            {icon}
             {children}
           </>
         )}
       </button>
     );
-  }
+  },
 );
 
 Button.displayName = 'Button';

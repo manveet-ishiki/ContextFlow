@@ -19,20 +19,28 @@ export function SearchBar({ onResultsChange }: SearchBarProps) {
       return;
     }
 
-    // Perform live filter search on active tabs
     const results = await liveTabSearch(value);
     onResultsChange(results);
   };
 
   return (
     <div className="relative">
-      <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+      <Search
+        size={14}
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+        aria-hidden="true"
+      />
       <input
+        id="tab-search"
         type="text"
         value={query}
         onChange={handleInputChange}
         placeholder="Search tabs..."
-        className="w-full pl-8 pr-3 py-1.5 bg-surface border border-border rounded text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-primary transition-colors"
+        aria-label="Search tabs"
+        className="w-full pl-9 pr-4 py-2 bg-surface border border-border rounded-full text-sm
+          text-text-primary placeholder-text-muted
+          focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary
+          transition-colors"
       />
     </div>
   );

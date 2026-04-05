@@ -241,3 +241,52 @@ export async function getProjectTabCount(projectId: string): Promise<number> {
     return 0;
   }
 }
+
+/**
+ * Saves a specific list of tabs as a named context (non-destructive — tabs remain open)
+ */
+export async function saveTabsAsContext(
+  name: string,
+  tabsToSave: { url: string; title: string; favIconUrl?: string }[],
+  color: string = '#6366f1',
+): Promise<string> {
+  console.log(`[ContextOperations] Saving ${tabsToSave.length} tabs as context: ${name}`);
+
+  try {
+    const projectId = crypto.randomUUID();
+
+    await db.projects.add({
+      id: projectId,
+      name,
+      color,
+      lastOpened: Date.now(),
+      isArchived: false,
+    });
+
+    for (const tab of tabsToSave) {
+      if (tab.url) {
+        await db.tabs.put({
+          id: Date.now() + Math.random(),
+          url: tab.url,
+          title: tab.title || '',
+          favIconUrl: tab.favIconUrl,
+          projectId,
+          windowId: -1,
+          lastAccessed: Date.now(),
+          visitedAt: Date.now(),
+        });
+      }
+    }
+
+    await autoExport().catch(err => console.warn('[ContextOperations] Auto-export failed:', err));
+    await syncProjectMetadata().catch(err =>
+      console.warn('[ContextOperations] Chrome sync failed:', err),
+    );
+
+    return projectId;
+  } catch (error) {
+    console.error('[ContextOperations] Failed to save tabs as context:', error);
+    throw error;
+  }
+}
+

@@ -7,20 +7,17 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
 }
 
-/**
- * Reusable card component
- * Follows ContextFlow design system
- */
 export const Card = memo(
   ({ variant = 'default', padding = 'md', children, className = '', ...props }: CardProps) => {
-    const baseStyles = 'bg-surface rounded-lg border border-border';
+    const base = 'bg-surface rounded-xl border border-border';
 
-    const variantStyles = {
+    const variants = {
       default: '',
-      interactive: 'hover:border-border-muted transition-colors cursor-pointer',
+      interactive:
+        'hover:border-border-muted hover:shadow-sm transition-all cursor-pointer',
     };
 
-    const paddingStyles = {
+    const paddings = {
       none: '',
       sm: 'p-2',
       md: 'p-3',
@@ -28,14 +25,11 @@ export const Card = memo(
     };
 
     return (
-      <div
-        className={cn(baseStyles, variantStyles[variant], paddingStyles[padding], className)}
-        {...props}
-      >
+      <div className={cn(base, variants[variant], paddings[padding], className)} {...props}>
         {children}
       </div>
     );
-  }
+  },
 );
 
 Card.displayName = 'Card';

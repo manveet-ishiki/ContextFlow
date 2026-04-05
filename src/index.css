@@ -1,5 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
+/* ============================================
+   DARK THEME — default
+   ============================================ */
 @theme {
   --color-primary: rgb(99 102 241);
   --color-primary-hover: rgb(79 70 229);
@@ -12,57 +16,91 @@
   --color-border: rgb(51 65 85);
   --color-border-muted: rgb(71 85 105);
 
-  --color-text-primary: rgb(255 255 255);
+  --color-text-primary: rgb(248 250 252);
   --color-text-secondary: rgb(203 213 225);
   --color-text-tertiary: rgb(148 163 184);
   --color-text-muted: rgb(100 116 139);
 
   --color-danger: rgb(248 113 113);
   --color-danger-hover: rgb(239 68 68);
-  --color-warning: rgb(253 224 71);
+  --color-warning: rgb(250 204 21);
   --color-warning-surface: rgb(113 63 18);
   --color-warning-border: rgb(161 98 7);
 }
 
+/* ============================================
+   LIGHT THEME — applied via data-theme="light"
+   ============================================ */
+[data-theme='light'] {
+  --color-background: rgb(255 255 255);
+  --color-surface: rgb(248 250 252);
+  --color-surface-hover: rgb(241 245 249);
+  --color-border: rgb(226 232 240);
+  --color-border-muted: rgb(203 213 225);
+
+  --color-text-primary: rgb(15 23 42);
+  --color-text-secondary: rgb(51 65 85);
+  --color-text-tertiary: rgb(100 116 139);
+  --color-text-muted: rgb(148 163 184);
+
+  --color-warning-surface: rgb(255 251 235);
+  --color-warning-border: rgb(253 230 138);
+}
+
+/* ============================================
+   BASE
+   ============================================ */
 @layer base {
+  * {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
   body {
     @apply antialiased;
   }
 }
 
+/* ============================================
+   COMPONENT CLASSES
+   ============================================ */
 @layer components {
   .btn {
-    @apply px-3 py-1.5 rounded-md font-medium transition-colors duration-150;
+    @apply px-3 py-1.5 rounded-lg font-medium transition-colors duration-150 inline-flex items-center gap-1.5 text-sm;
   }
 
   .btn-primary {
-    @apply bg-primary hover:bg-primary-hover text-text-primary;
+    @apply bg-primary hover:bg-primary-hover text-white;
   }
 
-  .btn-secondary {
-    @apply bg-surface-hover hover:bg-surface text-text-primary;
+  .btn-outline {
+    @apply border border-border hover:bg-surface-hover text-text-secondary hover:text-text-primary;
   }
 
   .btn-danger {
-    @apply bg-danger hover:bg-danger-hover text-text-primary;
+    @apply bg-danger hover:bg-danger-hover text-white;
   }
 
   .input {
-    @apply w-full px-3 py-2 bg-surface border border-border rounded-md text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
+    @apply w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary
+      placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40
+      focus:border-primary transition-all;
   }
 
   .card {
-    @apply bg-surface rounded-lg border border-border;
+    @apply bg-surface rounded-xl border border-border;
   }
 }
 
-/* Custom scrollbar */
+/* ============================================
+   SCROLLBAR
+   ============================================ */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-surface);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
