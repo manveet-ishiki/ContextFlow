@@ -1,26 +1,36 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { liveTabSearch } from '../../api/search';
 import type { TabRecord } from '../../types';
 
 interface SearchBarProps {
-  onResultsChange: (tabs: TabRecord[]) => void;
+  onResultsChange: (query: string, tabs: TabRecord[]) => void;
 }
 
 export function SearchBar({ onResultsChange }: SearchBarProps) {
   const [query, setQuery] = useState('');
+  const latestQuery = useRef('');
 
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setQuery(value);
+    latestQuery.current = value;
 
     if (!value.trim()) {
-      onResultsChange([]);
+      onResultsChange('', []);
       return;
     }
 
+    // Immediately propagate the query with empty results so downstream
+    // consumers (e.g. ContextList) can filter at once without waiting for async
+    onResultsChange(value, []);
+
     const results = await liveTabSearch(value);
-    onResultsChange(results);
+
+    // Discard if a newer query has already been issued (race condition guard)
+    if (value !== latestQuery.current) return;
+
+    onResultsChange(value, results);
   };
 
   return (

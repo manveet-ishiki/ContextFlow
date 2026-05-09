@@ -12,6 +12,7 @@ import type { TabRecord } from '../types';
 function App() {
   const { tabs, loading, reload } = useLiveTabs();
   const [searchResults, setSearchResults] = useState<TabRecord[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<'tabs' | 'contexts'>('tabs');
   const [isWorking, setIsWorking] = useState(false);
   const [recoveryStatus, setRecoveryStatus] = useState<string | null>(null);
@@ -26,7 +27,10 @@ function App() {
     [searchResults.length],
   );
 
-  const handleSearchResults = (results: TabRecord[]) => setSearchResults(results);
+  const handleSearchResults = (query: string, results: TabRecord[]) => {
+    setSearchQuery(query);
+    setSearchResults(results);
+  };
   const handleActionComplete = useCallback(() => reload(), [reload]);
 
   /* ── Startup recovery ────────────────────────────────────── */
@@ -134,7 +138,9 @@ function App() {
             )}
           </>
         ) : (
-          <ContextList onRestore={handleActionComplete} />
+          <div className="pt-3">
+            <ContextList onRestore={handleActionComplete} query={searchQuery} />
+          </div>
         )}
       </main>
 

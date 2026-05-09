@@ -11,6 +11,7 @@ import { cn } from '../../lib/utils';
 
 interface ContextListProps {
   onRestore: () => void;
+  query?: string;
 }
 
 interface ProjectWithTabs extends Project {
@@ -102,11 +103,13 @@ SavedTabItem.displayName = 'SavedTabItem';
  * Empty state uses no_data.svg illustration.
  */
 export const ContextList = memo(
-  ({ onRestore }: ContextListProps) => {
+  ({ onRestore, query = '' }: ContextListProps) => {
     const [projects, setProjects] = useState<ProjectWithTabs[]>([]);
     const [loading, setLoading] = useState(true);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+    const q = query.trim().toLowerCase();
 
     const toggleCollapse = (id: string) =>
       setCollapsed(prev => {
@@ -172,13 +175,27 @@ export const ContextList = memo(
       return <p className="text-xs text-text-tertiary text-center py-4">Loading…</p>;
     }
 
-    if (projects.length === 0) {
+    // Filter projects and their tabs by query
+    const visibleProjects = q
+      ? projects
+          .map(p => ({
+            ...p,
+            tabs: p.tabs.filter(
+              t => t.title.toLowerCase().includes(q) || t.url.toLowerCase().includes(q),
+            ),
+          }))
+          .filter(p => p.name.toLowerCase().includes(q) || p.tabs.length > 0)
+      : projects;
+
+    if (visibleProjects.length === 0) {
       return (
         <div className="flex flex-col items-center gap-2 py-6">
           <img src="/no_data.svg" alt="" className="w-48 opacity-90" aria-hidden="true" />
-          <p className="text-xs text-text-secondary font-medium">No saved contexts</p>
+          <p className="text-xs text-text-secondary font-medium">
+            {q ? 'No matching saved contexts' : 'No saved contexts'}
+          </p>
           <p className="text-[10px] text-text-muted text-center">
-            Save your current window to get started
+            {q ? 'Try a different search term' : 'Save your current window to get started'}
           </p>
         </div>
       );
@@ -186,7 +203,7 @@ export const ContextList = memo(
 
     return (
       <div className="space-y-3">
-        {projects.map(project => (
+        {visibleProjects.map(project => (
           <div key={project.id} role="region" aria-label={`Context: ${project.name}`}>
 
             {/* ── Project header row (mirrors window header style) ── */}
@@ -282,7 +299,6 @@ export const ContextList = memo(
       </div>
     );
   },
-  (prev, next) => prev.onRestore === next.onRestore,
 );
 
 ContextList.displayName = 'ContextList';
