@@ -1,40 +1,131 @@
 import { useState, useEffect, memo } from 'react';
-import { FolderOpen, Trash2, ChevronDown, ChevronRight, Archive } from 'lucide-react';
+import { Trash2, ExternalLink, ChevronRight, ChevronDown } from 'lucide-react';
+import { db } from '../../db';
 import {
   getProjects,
   restoreContext,
   deleteProject,
-  getProjectTabCount,
 } from '../../api/context-operations';
-import type { Project } from '../../types';
+import type { Project, TabRecord } from '../../types';
 import { cn } from '../../lib/utils';
 
 interface ContextListProps {
   onRestore: () => void;
 }
 
-interface ProjectWithCount extends Project {
-  tabCount: number;
+interface ProjectWithTabs extends Project {
+  tabs: TabRecord[];
 }
 
+/** Single saved tab row — open button and remove button on hover. */
+const SavedTabItem = memo(({
+  tab,
+  onRemove,
+}: {
+  tab: TabRecord;
+  onRemove: (tabId: number) => void;
+}) => {
+  const favicon = tab.favIconUrl || '';
+
+  const handleOpen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    chrome.tabs.create({ url: tab.url, active: true }).catch(() => {});
+  };
+
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onRemove(tab.id);
+  };
+
+  let hostname = tab.url;
+  try { hostname = new URL(tab.url).hostname; } catch { /* keep raw url */ }
+
+  return (
+    <div
+      role="listitem"
+      className="group flex items-center gap-2 py-2 pl-5 pr-2 rounded-lg
+        hover:bg-surface-hover/60 transition-colors"
+    >
+      {/* Favicon */}
+      <div className="relative w-4 h-4 flex-shrink-0">
+        {favicon ? (
+          <img
+            src={favicon}
+            alt=""
+            className="w-4 h-4 rounded-sm"
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        ) : (
+          <div className="w-4 h-4 rounded-sm bg-primary/20 text-primary
+            text-[8px] font-bold uppercase flex items-center justify-center">
+            {tab.title.charAt(0)}
+          </div>
+        )}
+      </div>
+
+      {/* Title + hostname */}
+      <div className="flex-1 min-w-0">
+        <div className="text-xs font-medium text-text-primary truncate leading-tight">
+          {tab.title}
+        </div>
+        <div className="text-[10px] text-text-tertiary truncate leading-tight">
+          {hostname}
+        </div>
+      </div>
+
+      {/* Open + Remove buttons — appear on hover */}
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+        <button
+          onClick={handleOpen}
+          className="p-1 rounded-md hover:bg-surface-hover transition-colors"
+          title="Open tab"
+          aria-label={`Open ${tab.title}`}
+        >
+          <ExternalLink size={11} className="text-primary" />
+        </button>
+        <button
+          onClick={handleRemove}
+          className="p-1 rounded-md hover:bg-surface-hover transition-colors"
+          title="Remove tab"
+          aria-label={`Remove ${tab.title}`}
+        >
+          <Trash2 size={11} className="text-danger" />
+        </button>
+      </div>
+    </div>
+  );
+});
+SavedTabItem.displayName = 'SavedTabItem';
+
 /**
- * Saved contexts — collapsible section (collapsed by default).
- * On expand shows a horizontal scrollable grid of cards.
+ * Saved contexts — always expanded, displayed like windows with tab lists.
+ * Empty state uses no_data.svg illustration.
  */
 export const ContextList = memo(
   ({ onRestore }: ContextListProps) => {
-    const [projects, setProjects] = useState<ProjectWithCount[]>([]);
+    const [projects, setProjects] = useState<ProjectWithTabs[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+    const toggleCollapse = (id: string) =>
+      setCollapsed(prev => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+      });
 
     const loadProjects = async () => {
       try {
         const all = await getProjects(false);
-        const withCounts = await Promise.all(
-          all.map(async p => ({ ...p, tabCount: await getProjectTabCount(p.id) })),
+        const withTabs = await Promise.all(
+          all.map(async p => ({
+            ...p,
+            tabs: await db.tabs.where('projectId').equals(p.id).toArray(),
+          })),
         );
-        withCounts.sort((a, b) => b.lastOpened - a.lastOpened);
-        setProjects(withCounts);
+        withTabs.sort((a, b) => b.lastOpened - a.lastOpened);
+        setProjects(withTabs);
       } catch (err) {
         console.error('Failed to load projects:', err);
       } finally {
@@ -42,9 +133,7 @@ export const ContextList = memo(
       }
     };
 
-    useEffect(() => {
-      loadProjects();
-    }, []);
+    useEffect(() => { loadProjects(); }, []);
 
     const handleRestore = async (projectId: string) => {
       try {
@@ -55,8 +144,8 @@ export const ContextList = memo(
       }
     };
 
-    const handleDelete = async (projectId: string) => {
-      if (!confirm('Delete this context and all its tabs?')) return;
+    const handleDeleteProject = async (projectId: string) => {
+      setConfirmDeleteId(null);
       try {
         await deleteProject(projectId);
         setProjects(prev => prev.filter(p => p.id !== projectId));
@@ -65,118 +154,131 @@ export const ContextList = memo(
       }
     };
 
-    const formatDate = (ts: number) => {
-      const diff = Date.now() - ts;
-      const mins = Math.floor(diff / 60000);
-      const hours = Math.floor(diff / 3600000);
-      const days = Math.floor(diff / 86400000);
-
-      if (mins < 1) return 'Just now';
-      if (mins < 60) return `${mins}m ago`;
-      if (hours < 24) return `${hours}h ago`;
-      if (days < 7) return `${days}d ago`;
-      return new Date(ts).toLocaleDateString();
+    const handleRemoveTab = async (projectId: string, tabId: number) => {
+      // Optimistic update — remove from UI immediately before awaiting DB
+      setProjects(prev => prev.map(p =>
+        p.id === projectId
+          ? { ...p, tabs: p.tabs.filter(t => t.id !== tabId) }
+          : p,
+      ));
+      try {
+        await db.tabs.delete(tabId);
+      } catch (err) {
+        console.error('Failed to remove tab:', err);
+      }
     };
 
+    if (loading) {
+      return <p className="text-xs text-text-tertiary text-center py-4">Loading…</p>;
+    }
+
+    if (projects.length === 0) {
+      return (
+        <div className="flex flex-col items-center gap-2 py-6">
+          <img src="/no_data.svg" alt="" className="w-48 opacity-90" aria-hidden="true" />
+          <p className="text-xs text-text-secondary font-medium">No saved contexts</p>
+          <p className="text-[10px] text-text-muted text-center">
+            Save your current window to get started
+          </p>
+        </div>
+      );
+    }
+
     return (
-      <div className="space-y-2">
-        {/* Section header — always visible */}
-        <button
-          onClick={() => setIsExpanded(p => !p)}
-          className="w-full flex items-center justify-between py-2 group"
-          aria-expanded={isExpanded}
-          aria-controls="saved-contexts-panel"
-        >
-          <div className="flex items-center gap-2">
-            <Archive size={13} className="text-text-muted" aria-hidden="true" />
-            <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
-              Saved Contexts
-            </span>
-            {!loading && projects.length > 0 && (
-              <span className="text-[10px] text-text-muted bg-surface px-1.5 py-0.5 rounded-full border border-border">
-                {projects.length}
-              </span>
-            )}
-          </div>
-          {isExpanded ? (
-            <ChevronDown size={13} className="text-text-muted transition-transform" />
-          ) : (
-            <ChevronRight size={13} className="text-text-muted transition-transform" />
-          )}
-        </button>
+      <div className="space-y-3">
+        {projects.map(project => (
+          <div key={project.id} role="region" aria-label={`Context: ${project.name}`}>
 
-        {/* Collapsible panel */}
-        {isExpanded && (
-          <div id="saved-contexts-panel" role="region" aria-label="Saved contexts">
-            {loading ? (
-              <p className="text-xs text-text-tertiary text-center py-4">Loading…</p>
-            ) : projects.length === 0 ? (
-              <div className="flex flex-col items-center gap-1.5 py-6 text-text-tertiary">
-                <Archive size={28} className="opacity-40" aria-hidden="true" />
-                <p className="text-xs">No saved contexts</p>
-                <p className="text-[10px] text-text-muted">
-                  Save your current window to get started
-                </p>
-              </div>
-            ) : (
-              /* Horizontal scrollable card row */
-              <div
-                className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin"
-                role="list"
-                aria-label="Saved context list"
+            {/* ── Project header row (mirrors window header style) ── */}
+            <div className="group/ctx flex items-center gap-1">
+
+              {/* Collapse chevron */}
+              <button
+                onClick={() => toggleCollapse(project.id)}
+                className="p-0.5 hover:bg-surface-hover/60 rounded transition-colors flex-shrink-0"
+                aria-expanded={!collapsed.has(project.id)}
+                aria-label={collapsed.has(project.id) ? 'Expand' : 'Collapse'}
               >
-                {projects.map(project => (
-                  <div
-                    key={project.id}
-                    role="listitem"
-                    className={cn(
-                      'flex-shrink-0 w-36 bg-surface rounded-xl border border-border p-3',
-                      'hover:border-border-muted hover:shadow-sm transition-all',
-                    )}
-                    style={{
-                      borderLeftColor: project.color,
-                      borderLeftWidth: '3px',
-                    }}
+                {collapsed.has(project.id)
+                  ? <ChevronRight size={13} className="text-text-muted" />
+                  : <ChevronDown size={13} className="text-text-muted" />}
+              </button>
+
+              {/* Color dot */}
+              <div
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: project.color }}
+                aria-hidden="true"
+              />
+
+              {/* Name + count */}
+              <h3 className={cn(
+                'flex-1 min-w-0 text-xs font-medium text-text-muted',
+                'flex items-center gap-1.5 py-1 truncate',
+              )}>
+                {project.name}
+                <span className="opacity-40">·</span>
+                {project.tabs.length} {project.tabs.length === 1 ? 'tab' : 'tabs'}
+              </h3>
+
+              {/* Actions — appear on hover */}
+              {confirmDeleteId === project.id ? (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleDeleteProject(project.id)}
+                    className="text-[10px] font-medium text-danger hover:text-danger/80 transition-colors px-1"
+                    aria-label={`Confirm delete ${project.name}`}
                   >
-                    {/* Name */}
-                    <p
-                      className="text-xs font-semibold text-text-primary truncate leading-tight"
-                      title={project.name}
-                    >
-                      {project.name}
-                    </p>
+                    Delete?
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteId(null)}
+                    className="text-[10px] text-text-muted hover:text-text-secondary transition-colors px-1"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className={cn(
+                  'flex items-center gap-1 transition-opacity',
+                  'opacity-0 group-hover/ctx:opacity-100',
+                )}>
+                  {/* Open all tabs in a new window */}
+                  <button
+                    onClick={() => handleRestore(project.id)}
+                    className="p-1 rounded-md hover:bg-surface-hover transition-colors"
+                    title={`Open "${project.name}" in new window`}
+                    aria-label={`Open context: ${project.name}`}
+                  >
+                    <ExternalLink size={13} className="text-primary" />
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteId(project.id)}
+                    className="p-1 rounded-md hover:bg-surface-hover transition-colors"
+                    title={`Delete "${project.name}"`}
+                    aria-label={`Delete context: ${project.name}`}
+                  >
+                    <Trash2 size={11} className="text-danger" />
+                  </button>
+                </div>
+              )}
+            </div>
 
-                    {/* Meta */}
-                    <p className="text-[10px] text-text-tertiary mt-1">
-                      {project.tabCount} {project.tabCount === 1 ? 'tab' : 'tabs'}
-                    </p>
-                    <p className="text-[10px] text-text-muted">{formatDate(project.lastOpened)}</p>
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border">
-                      <button
-                        onClick={() => handleRestore(project.id)}
-                        className="p-1 hover:bg-surface-hover rounded-md transition-colors"
-                        title="Restore context"
-                        aria-label={`Restore context: ${project.name}`}
-                      >
-                        <FolderOpen size={12} className="text-primary-muted" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(project.id)}
-                        className="p-1 hover:bg-surface-hover rounded-md transition-colors"
-                        title="Delete context"
-                        aria-label={`Delete context: ${project.name}`}
-                      >
-                        <Trash2 size={12} className="text-danger" />
-                      </button>
-                    </div>
-                  </div>
+            {/* ── Tab list ── */}
+            {!collapsed.has(project.id) && (
+              <div role="list">
+                {project.tabs.map(tab => (
+                  <SavedTabItem
+                    key={tab.id}
+                    tab={tab}
+                    onRemove={tabId => handleRemoveTab(project.id, tabId)}
+                  />
                 ))}
               </div>
             )}
+
           </div>
-        )}
+        ))}
       </div>
     );
   },

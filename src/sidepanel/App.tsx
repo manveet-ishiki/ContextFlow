@@ -95,7 +95,7 @@ function App() {
   const activeTabCount = tabs.filter(t => t.windowId !== -1).length;
 
   return (
-    <div className="min-h-screen bg-background text-text-primary flex flex-col">
+    <div className="h-screen bg-background text-text-primary flex flex-col">
       {/* Recovery Banner */}
       {recoveryStatus && (
         <div className="px-4 py-2 bg-warning-surface/50 border-b border-warning-border text-center">
@@ -110,7 +110,7 @@ function App() {
       </div>
 
       {/* ── Main Content ─────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+      <main className="flex-1 overflow-y-auto px-4 pb-3 space-y-4">
         {activeView === 'tabs' ? (
           <>
             {searchResults.length > 0 && (
@@ -129,6 +129,7 @@ function App() {
                 onMergeWindows={handleMergeWindows}
                 onDeduplicateTabs={handleDeduplicate}
                 onSaveTabsAsContext={handleSaveTabsAsContext}
+                isSearchResult={searchResults.length > 0}
               />
             )}
           </>
@@ -139,7 +140,7 @@ function App() {
 
       {/* ── Status Footer ──────────────────────────────────────── */}
       <footer className="border-t border-border bg-background px-4 py-2 flex-shrink-0">
-        <div className="flex items-center justify-center gap-3 text-[10px] text-text-muted">
+        <div className="flex items-center justify-between text-[10px] text-text-muted">
           <div className="flex items-center gap-1">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
               <rect x="0" y="0" width="4" height="4" rx="1" fill="currentColor" opacity="0.7" />
@@ -149,13 +150,14 @@ function App() {
             </svg>
             <span>{activeTabCount} tabs</span>
           </div>
-          <div className="w-px h-3 bg-border" />
-          <div className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span>Indexed</span>
-          </div>
-          <div className="w-px h-3 bg-border" />
-          <span>Local-First</span>
+          <a
+            href="https://forms.gle/2FxCv3XE4BXSRiu67"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-text transition-colors"
+          >
+            Feedback →
+          </a>
         </div>
       </footer>
     </div>

@@ -1,6 +1,13 @@
 import { db } from '../db';
 import type { TabRecord, Project, Snapshot } from '../types';
 
+declare global {
+  interface Window {
+    showDirectoryPicker(options?: { mode?: string; startIn?: string }): Promise<FileSystemDirectoryHandle>;
+    showOpenFilePicker(options?: { types?: { description: string; accept: Record<string, string[]> }[]; startIn?: string }): Promise<FileSystemFileHandle[]>;
+  }
+}
+
 /**
  * Export data structure for sync files
  */
@@ -19,8 +26,11 @@ let syncDirectoryHandle: FileSystemDirectoryHandle | null = null;
  * Stores the directory handle for future use
  */
 export async function selectSyncFolder(): Promise<FileSystemDirectoryHandle> {
+  if (typeof window.showDirectoryPicker !== 'function') {
+    throw new Error('File System Access API is not supported in this browser');
+  }
   try {
-    const handle = await (window as any).showDirectoryPicker({
+    const handle = await window.showDirectoryPicker({
       mode: 'readwrite',
       startIn: 'documents',
     });
@@ -116,8 +126,11 @@ export async function validateSyncData(data: any): Promise<{ valid: boolean; err
  * Merges with existing data
  */
 export async function importFromLocalSync(): Promise<void> {
+  if (typeof window.showOpenFilePicker !== 'function') {
+    throw new Error('File System Access API is not supported in this browser');
+  }
   try {
-    const [fileHandle] = await (window as any).showOpenFilePicker({
+    const [fileHandle] = await window.showOpenFilePicker({
       types: [
         {
           description: 'ContextFlow Sync File',

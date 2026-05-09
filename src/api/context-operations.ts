@@ -57,7 +57,7 @@ export async function saveWindowAsContext(
       if (tab.id && tab.url) {
         // Save tab to database (create a persistent copy)
         await db.tabs.put({
-          id: Date.now() + Math.random(), // Use timestamp + random for unique ID
+          id: crypto.getRandomValues(new Uint32Array(1))[0],
           url: tab.url,
           title: tab.title || '',
           favIconUrl: tab.favIconUrl,
@@ -266,7 +266,7 @@ export async function saveTabsAsContext(
     for (const tab of tabsToSave) {
       if (tab.url) {
         await db.tabs.put({
-          id: Date.now() + Math.random(),
+          id: crypto.getRandomValues(new Uint32Array(1))[0],
           url: tab.url,
           title: tab.title || '',
           favIconUrl: tab.favIconUrl,

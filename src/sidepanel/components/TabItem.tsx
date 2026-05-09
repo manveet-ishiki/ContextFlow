@@ -13,6 +13,9 @@ interface TabItemProps {
   onToggleSelect?: (tabId: number) => void;
   windowId?: number;
   isDraggingGroup?: boolean;
+  isSearchResult?: boolean;
+  currentWindowId?: number | null;
+  windowNumber?: number;
 }
 
 /**
@@ -30,6 +33,9 @@ export const TabItem = memo(
     onToggleSelect,
     windowId,
     isDraggingGroup = false,
+    isSearchResult = false,
+    currentWindowId,
+    windowNumber,
   }: TabItemProps) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
       id: tab.id,
@@ -61,15 +67,7 @@ export const TabItem = memo(
       onToggleSelect?.(tab.id);
     };
 
-    // Favicon with Google fallback
-    let favicon = tab.favIconUrl;
-    if (!favicon) {
-      try {
-        favicon = `https://www.google.com/s2/favicons?domain=${new URL(tab.url).hostname}&sz=32`;
-      } catch {
-        favicon = '';
-      }
-    }
+    const favicon = tab.favIconUrl || '';
 
     /* ── Ghost: same padding/structure as real row → identical height ─ */
     if (isDragging) {
@@ -203,8 +201,15 @@ export const TabItem = memo(
           }}
           aria-label={`Open ${tab.title}`}
         >
-          <div className="text-xs font-medium text-text-primary truncate leading-tight">
-            {tab.title}
+          <div className="flex items-center gap-1 min-w-0">
+            <div className="text-xs font-medium text-text-primary truncate leading-tight min-w-0">
+              {tab.title}
+            </div>
+            {isSearchResult && currentWindowId !== null && currentWindowId !== undefined && tab.windowId !== currentWindowId && windowNumber !== undefined && (
+              <span className="flex-shrink-0 text-[9px] text-text-tertiary bg-surface px-1 py-0.5 rounded leading-none">
+                ↗ Win {windowNumber}
+              </span>
+            )}
           </div>
           <div className="text-[10px] text-text-tertiary truncate leading-tight">
             {(() => {
@@ -236,7 +241,10 @@ export const TabItem = memo(
     prev.tab.url === next.tab.url &&
     prev.tab.favIconUrl === next.tab.favIconUrl &&
     prev.isSelected === next.isSelected &&
-    prev.isDraggingGroup === next.isDraggingGroup,
+    prev.isDraggingGroup === next.isDraggingGroup &&
+    prev.isSearchResult === next.isSearchResult &&
+    prev.currentWindowId === next.currentWindowId &&
+    prev.windowNumber === next.windowNumber,
 );
 
 TabItem.displayName = 'TabItem';

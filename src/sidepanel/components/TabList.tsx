@@ -74,6 +74,7 @@ interface TabListProps {
   onDeduplicateTabs: () => void;
   /** Handles both window-level and global saves; pass the desired tabIds */
   onSaveTabsAsContext: (tabIds: number[], name: string) => void;
+  isSearchResult?: boolean;
 }
 
 
@@ -141,7 +142,7 @@ function OutlinedBtn({
 
 // ─── TabList ─────────────────────────────────────────────────────────────────
 export const TabList = memo(
-  ({ tabs, onTabClose, onMergeWindows, onDeduplicateTabs, onSaveTabsAsContext }: TabListProps) => {
+  ({ tabs, onTabClose, onMergeWindows, onDeduplicateTabs, onSaveTabsAsContext, isSearchResult = false }: TabListProps) => {
     const [selectedTabs, setSelectedTabs] = useState<Set<number>>(new Set());
     const [collapsedWindows, setCollapsedWindows] = useState<Set<number>>(new Set());
     const [activeId, setActiveId] = useState<number | null>(null);
@@ -199,6 +200,13 @@ export const TabList = memo(
       }
       return order;
     }, [tabs, currentWindowId]);
+
+    // 1-based display numbers per windowId (current window = 1)
+    const windowNumberMap = useMemo(() => {
+      const map = new Map<number, number>();
+      windowOrder.forEach((wid, i) => map.set(wid, i + 1));
+      return map;
+    }, [windowOrder]);
 
     const activeTabs = displayTabs.filter(t => t.windowId !== -1);
 
@@ -331,7 +339,9 @@ export const TabList = memo(
 
       let targetWindowId: number; let overTabId: number | null = null;
       if (typeof over.id === 'string') {
-        targetWindowId = parseInt(over.id.slice('window-'.length), 10);
+        const parsed = parseInt(over.id.slice('window-'.length), 10);
+        if (Number.isNaN(parsed)) return;
+        targetWindowId = parsed;
       } else {
         overTabId = over.id as number;
         const overTab = displayTabs.find(t => t.id === overTabId);
@@ -437,7 +447,7 @@ export const TabList = memo(
         <div className="space-y-1" role="list" aria-label="Open windows">
 
           {/* ── Master header — single row ───────────────────────── */}
-          <div className="flex items-center gap-1.5 pb-1 mb-1">
+          <div className="flex items-center gap-1.5 sticky top-0 z-10 bg-background pt-3 pb-1 mb-1">
             {/* LayoutGrid / checkbox slot — always visible, acts as master select */}
             <div
               className="group/master-checkbox relative w-4 h-4 flex-shrink-0 cursor-pointer"
@@ -583,15 +593,15 @@ export const TabList = memo(
                         }
                       }}
                     >
-                      {/* LayoutGrid — always visible unless hovering the slot or selected */}
+                      {/* LayoutGrid — always visible unless hovering the row/slot or selected */}
                       <LayoutGrid size={13} className={cn(
                         'absolute inset-0 text-text-muted pointer-events-none transition-opacity',
-                        hasSelection ? 'opacity-0' : 'opacity-100 group-hover/window-checkbox:opacity-0',
+                        hasSelection ? 'opacity-0' : 'opacity-100 group-hover/window-checkbox:opacity-0 group-hover/win:opacity-0',
                       )} />
-                      {/* Checkbox — fades in on slot hover or when selected */}
+                      {/* Checkbox — fades in on row/slot hover or when selected */}
                       <div className={cn(
                         'absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity',
-                        hasSelection ? 'opacity-100' : 'opacity-0 group-hover/window-checkbox:opacity-100',
+                        hasSelection ? 'opacity-100' : 'opacity-0 group-hover/window-checkbox:opacity-100 group-hover/win:opacity-100',
                       )}>
                         <div className={cn(
                           'w-3.5 h-3.5 rounded flex items-center justify-center transition-all',
@@ -695,6 +705,9 @@ export const TabList = memo(
                                 selectedTabs.has(tab.id) &&
                                 selectedTabs.has(activeId)
                               }
+                              isSearchResult={isSearchResult}
+                              currentWindowId={currentWindowId}
+                              windowNumber={windowNumberMap.get(windowId)}
                             />
                           </React.Fragment>
                         ))}
@@ -739,7 +752,8 @@ export const TabList = memo(
     prev.onTabClose === next.onTabClose &&
     prev.onMergeWindows === next.onMergeWindows &&
     prev.onDeduplicateTabs === next.onDeduplicateTabs &&
-    prev.onSaveTabsAsContext === next.onSaveTabsAsContext,
+    prev.onSaveTabsAsContext === next.onSaveTabsAsContext &&
+    prev.isSearchResult === next.isSearchResult,
 );
 
 TabList.displayName = 'TabList';

@@ -99,6 +99,8 @@ chrome.tabs.onRemoved.addListener(async tabId => {
  * Handle messages from content scripts and side panel
  */
 chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) => {
+  if (sender.id !== chrome.runtime.id) return false;
+
   console.log(
     '[Background] Received message:',
     message.type,
